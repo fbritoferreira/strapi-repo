@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "strapi-workers-d1",
+  "main": ".worker/worker.mjs",
+  "no_bundle": true,
+  "compatibility_date": "2026-09-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "strapi-workers-d1", "database_id": "local-only" },
+  ],
+}

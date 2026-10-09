@@ -23,6 +23,7 @@ module.exports = ({ env }) => ({
     global: env('http_proxy'),
   },
   http: {
+    adapter: env('STRAPI_HTTP_ADAPTER', 'koa'),
     serverOptions: {
       requestTimeout: 1000 * 60 * 10, // set request timeout to 600000ms (10 minutes)
     },

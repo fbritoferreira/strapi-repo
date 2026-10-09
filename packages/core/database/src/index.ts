@@ -14,10 +14,18 @@ import { Callback, transactionCtx, TransactionObject } from './transaction-conte
 import { validateDatabase } from './validations';
 import type { Model } from './types';
 import { createRepairManager, type RepairManager } from './repairs';
+import { createDrizzle } from './drizzle';
 
 export { isKnexQuery } from './utils/knex';
 export { isDatabaseClientKind } from './connection';
 export { attributeNaming } from './metadata';
+export { d1, nodeSqlite } from './dialects/sqlite/driver';
+export type {
+  SqliteDriver,
+  SqliteConnection,
+  SqliteResult,
+  D1Binding,
+} from './dialects/sqlite/driver';
 export type { AttributeNaming, Meta } from './metadata';
 export type {
   AttributeRenamesOperation,
@@ -84,6 +92,14 @@ class Database {
   repair: RepairManager;
 
   logger: Logger;
+
+  #drizzle?: ReturnType<typeof createDrizzle>;
+
+  /** Drizzle client and tables for the current schema. Built on first use, after init(). */
+  get drizzle() {
+    this.#drizzle ??= createDrizzle(this);
+    return this.#drizzle;
+  }
 
   constructor(config: DatabaseConfig) {
     this.config = {

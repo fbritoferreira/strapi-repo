@@ -1,0 +1,26 @@
+{
+  "name": "workers-d1",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Strapi API server on Cloudflare Workers with D1",
+  "scripts": {
+    "build:worker": "node scripts/build-worker.mjs",
+    "dev": "yarn build:worker && wrangler dev",
+    "deploy": "yarn build:worker && wrangler deploy",
+    "build:admin": "strapi build && node scripts/stage-admin.mjs",
+    "dev:admin": "wrangler dev -c wrangler.admin.jsonc --port 8788",
+    "strapi": "strapi"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "1.6.3",
+    "@strapi/strapi": "workspace:*",
+    "drizzle-orm": "0.45.3",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.6",
+    "styled-components": "6.4.1"
+  },
+  "devDependencies": {
+    "wrangler": "4.139.0"
+  }
+}

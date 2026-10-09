@@ -168,7 +168,26 @@ const writeCache = async (cachePath: string, document: unknown) => {
 };
 
 const generateDocument = (strapi: Core.Strapi, type: OpenAPIRouteType) => {
-  return openapi.generate(strapi, { type }).document;
+  const document = openapi.generate(strapi, { type }).document;
+
+  // routes registered natively on strapi.server.hono with @hono/zod-openapi
+  if (type !== 'content-api' || !strapi.server?.hono) {
+    return document;
+  }
+
+  const hono = strapi.server.hono.getOpenAPI31Document({
+    openapi: '3.1.0',
+    info: { title: '', version: '' },
+  });
+
+  return {
+    ...document,
+    paths: { ...document.paths, ...hono.paths },
+    components: {
+      ...document.components,
+      schemas: { ...document.components?.schemas, ...hono.components?.schemas },
+    },
+  };
 };
 
 export const registerOpenAPIRoute = (strapi: Core.Strapi) => {

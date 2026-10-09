@@ -1,5 +1,12 @@
 import knex from 'knex';
 import type { Knex } from 'knex';
+import BetterSqlite3Client from 'knex/lib/dialects/better-sqlite3';
+
+import {
+  createSqliteDriverClient,
+  sqliteDrivers,
+  type SqliteDriver,
+} from './dialects/sqlite/driver';
 
 const clientMap = {
   sqlite: 'better-sqlite3',
@@ -18,7 +25,17 @@ export const createConnection = (userConfig: Knex.Config, strapiConfig?: Partial
     throw new Error(`Unsupported database client ${userConfig.client}`);
   }
 
-  const knexConfig: Knex.Config = { ...userConfig, client: clientMap[userConfig.client] };
+  const { driver, ...rest } = userConfig as Knex.Config & { driver?: string | SqliteDriver };
+  const knexConfig: Knex.Config = { ...rest, client: clientMap[userConfig.client] };
+
+  if (driver && userConfig.client === 'sqlite') {
+    const sqliteDriver = typeof driver === 'string' ? sqliteDrivers[driver] : driver;
+    if (!sqliteDriver) {
+      throw new Error(`Unknown sqlite driver ${driver}. Available: ${Object.keys(sqliteDrivers)}`);
+    }
+
+    knexConfig.client = createSqliteDriverClient(BetterSqlite3Client, sqliteDriver);
+  }
 
   // initialization code to run upon opening a new connection
   if (strapiConfig?.pool?.afterCreate) {
@@ -42,5 +59,8 @@ export const createConnection = (userConfig: Knex.Config, strapiConfig?: Partial
     };
   }
 
-  return knex(knexConfig);
+  const instance = knex(knexConfig);
+  // migrations branch on the client name to pick sqlite batch sizes and upsert syntax
+  instance.client.config.client = clientMap[userConfig.client];
+  return instance;
 };

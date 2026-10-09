@@ -1,0 +1,8 @@
+.worker
+.wrangler
+.tmp
+.strapi-updater.json
+build
+.admin
+.strapi
+dist

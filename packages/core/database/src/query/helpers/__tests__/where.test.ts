@@ -133,3 +133,56 @@ describe('applyWhere - LIKE operator escaping', () => {
     });
   });
 });
+
+// Cloudflare D1 rejects LIKE patterns over 50 bytes, so SQLite switches to substr/instr.
+describe('applyWhere - long LIKE patterns on sqlite', () => {
+  const long = 'a-value-that-is-long-enough-to-exceed-the-d1-like-limit';
+
+  test('sqlite compiles long patterns without LIKE, other dialects keep LIKE', async () => {
+    const sqlite = createKnex({ client: 'better-sqlite3', useNullAsDefault: true });
+    const pg = createKnex({ client: 'pg' });
+
+    const sqliteQb = sqlite('t');
+    applyWhere(sqliteQb, { handle: { $startsWith: long } });
+    expect(sqliteQb.toSQL().sql).toMatch(/substr\(LOWER/);
+    expect(sqliteQb.toSQL().sql).not.toMatch(/LIKE/i);
+
+    const pgQb = pg('t');
+    applyWhere(pgQb, { handle: { $startsWith: long } });
+    expect(pgQb.toSQL().sql).toMatch(/LIKE/i);
+
+    await Promise.all([sqlite.destroy(), pg.destroy()]);
+  });
+
+  test('long-pattern operators match what LIKE would on sqlite', async () => {
+    const { createConnection } = await import('../../../connection');
+    const knex = createConnection({
+      client: 'sqlite',
+      connection: { filename: ':memory:' },
+      useNullAsDefault: true,
+      driver: 'node:sqlite',
+    } as any);
+    await knex.schema.createTable('t', (t) => {
+      t.increments('id');
+      t.string('handle');
+    });
+    await knex('t').insert([
+      { handle: `${long}-tail` },
+      { handle: `HEAD-${long.toUpperCase()}` },
+      { handle: 'other' },
+    ]);
+
+    const ids = async (where: Record<string, unknown>) => {
+      const qb = knex('t').select('id');
+      applyWhere(qb, { handle: where });
+      return (await qb).map((row: { id: number }) => row.id);
+    };
+
+    expect(await ids({ $startsWith: long })).toEqual([1]);
+    expect(await ids({ $endsWith: long })).toEqual([2]);
+    expect(await ids({ $containsi: long })).toEqual([1, 2]);
+    expect(await ids({ $notContains: long })).toEqual([3]);
+
+    await knex.destroy();
+  });
+});

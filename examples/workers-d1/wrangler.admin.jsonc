@@ -1,0 +1,11 @@
+// Deployment 2 of 2: the admin panel as static assets. It talks to the API
+// Worker (wrangler.jsonc) at the absolute URL baked in by `strapi build`.
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "strapi-workers-d1-admin",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": ".admin",
+    "not_found_handling": "single-page-application",
+  },
+}

@@ -1,6 +1,7 @@
 import http from 'http';
 import type { Socket } from 'net';
 import Koa from 'koa';
+import { getRequestListener } from '@hono/node-server';
 import type { Core } from '@strapi/types';
 
 export interface Server extends http.Server {
@@ -14,7 +15,10 @@ const createHTTPServer = (strapi: Core.Strapi, koaApp: Koa): Server => {
   let handler: http.RequestListener;
   const listener: http.RequestListener = function handleRequest(req, res) {
     if (!handler) {
-      handler = koaApp.callback();
+      handler =
+        strapi.config.get<string>('server.http.adapter', 'koa') === 'hono'
+          ? getRequestListener(strapi.server.hono.fetch)
+          : koaApp.callback();
     }
 
     return handler(req, res);
