@@ -54,6 +54,17 @@ await check('findOne', async () => {
   assert.equal(res.body.data.title, title);
 });
 
+await check('native zod-openapi route queries D1 through Drizzle', async () => {
+  const res = await call('/api/stats/recent?limit=1');
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body[0].title, title);
+});
+
+await check('zod rejects an out-of-range query before the handler', async () => {
+  const res = await call('/api/stats/recent?limit=500');
+  assert.equal(res.status, 400);
+});
+
 await check('update', async () => {
   const res = await call(`/api/articles/${documentId}`, send('PUT', { title: longTitle }));
   assert.equal(res.status, 200, JSON.stringify(res.body));

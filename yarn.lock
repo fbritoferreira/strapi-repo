@@ -31681,6 +31681,7 @@ __metadata:
   dependencies:
     "@hono/zod-openapi": "npm:1.6.3"
     "@strapi/strapi": "workspace:*"
+    drizzle-orm: "npm:0.45.3"
     react: "npm:18.3.1"
     react-dom: "npm:18.3.1"
     react-router-dom: "npm:6.30.6"
