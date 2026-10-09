@@ -1,10 +1,12 @@
 import { drizzle } from 'drizzle-orm/sqlite-proxy';
+import { drizzle as drizzleD1 } from 'drizzle-orm/d1';
 import { integer, real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import type { Knex } from 'knex';
 
 import { transactionCtx } from './transaction-context';
 import type { Database } from '.';
 import type { Column, Table } from './schema/types';
+import type { SqliteConnection as DriverConnection, SqliteDriver } from './dialects/sqlite/driver';
 
 /**
  * Drizzle over Strapi's own tables.
@@ -58,6 +60,45 @@ type SqliteStatement = {
 };
 type SqliteConnection = { prepare(sql: string): SqliteStatement };
 
+type Method = 'run' | 'all' | 'values' | 'get';
+
+const viaBetterSqlite3 = (
+  connection: SqliteConnection,
+  sql: string,
+  params: unknown[],
+  method: Method
+) => {
+  const statement = connection.prepare(sql);
+  if (!statement.reader) {
+    statement.run(params);
+    return { rows: [] };
+  }
+
+  // positional rows: object rows would collapse same-named columns in joins
+  statement.raw(true);
+  return {
+    rows: method === 'get' ? (statement.get(params) as unknown[]) : statement.all(params),
+  };
+};
+
+const viaDriver = async (
+  connection: DriverConnection,
+  sql: string,
+  params: unknown[],
+  method: Method
+) => {
+  if (method === 'run') {
+    await connection.query(sql, params);
+    return { rows: [] };
+  }
+
+  // positional rows when the driver has them; object rows lose same-named join columns
+  const rows = connection.queryValues
+    ? await connection.queryValues(sql, params)
+    : (await connection.query(sql, params)).rows.map((row) => Object.values(row));
+  return { rows: method === 'get' ? rows[0] : rows };
+};
+
 export const createDrizzle = (db: Database) => {
   if (db.dialect.client !== 'sqlite') {
     throw new Error(`Drizzle bridge only supports sqlite for now, got ${db.dialect.client}`);
@@ -65,27 +106,24 @@ export const createDrizzle = (db: Database) => {
 
   const tables = Object.fromEntries(db.schema.schema.tables.map((t) => [t.name, toTable(t)]));
 
-  const client = drizzle(async (sql, params, method) => {
-    // Inside strapi.db.transaction() this is the transaction's own connection
-    const knex: Knex = transactionCtx.get() ?? db.connection;
-    const connection: SqliteConnection = await knex.client.acquireConnection();
+  const { driver } = db.config.connection as { driver?: SqliteDriver };
 
-    try {
-      const statement = connection.prepare(sql);
-      if (!statement.reader) {
-        statement.run(params);
-        return { rows: [] };
-      }
+  // On D1, use Drizzle's own D1 driver: same binding, plus D1's atomic batch()
+  const client = driver?.d1
+    ? drizzleD1(driver.d1 as any)
+    : drizzle(async (sql, params, method) => {
+        // Inside strapi.db.transaction() this is the transaction's own connection
+        const knex: Knex = transactionCtx.get() ?? db.connection;
+        const connection = await knex.client.acquireConnection();
 
-      // positional rows: object rows would collapse same-named columns in joins
-      statement.raw(true);
-      return {
-        rows: method === 'get' ? (statement.get(params) as unknown[]) : statement.all(params),
-      };
-    } finally {
-      await knex.client.releaseConnection(connection);
-    }
-  });
+        try {
+          return 'query' in connection
+            ? await viaDriver(connection, sql, params, method)
+            : viaBetterSqlite3(connection, sql, params, method);
+        } finally {
+          await knex.client.releaseConnection(connection);
+        }
+      });
 
   return {
     client,

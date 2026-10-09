@@ -20,6 +20,8 @@ export interface SqliteResult {
 
 export interface SqliteConnection {
   query(sql: string, params: unknown[]): Promise<SqliteResult> | SqliteResult;
+  /** Rows as value arrays, so joins keep same-named columns apart (used by strapi.db.drizzle). */
+  queryValues?(sql: string, params: unknown[]): Promise<unknown[][]> | unknown[][];
   close?(): Promise<void> | void;
 }
 
@@ -31,10 +33,13 @@ export interface SqliteDriver {
    * connection.
    */
   pool?: { min: number; max: number };
+  /** The D1 binding, when the driver runs on one; strapi.db.drizzle uses drizzle-orm/d1 with it. */
+  d1?: D1Binding;
 }
 
 type NodeSqliteStatement = {
   columns?(): unknown[];
+  setReturnArrays(enabled: boolean): void;
   all(...params: unknown[]): Record<string, unknown>[];
   run(...params: unknown[]): { changes: number | bigint; lastInsertRowid: number | bigint };
 };
@@ -60,6 +65,11 @@ export const nodeSqlite: SqliteDriver = {
 
         const { changes, lastInsertRowid } = statement.run(...params);
         return { reader, rows: [], changes: Number(changes), lastID: Number(lastInsertRowid) };
+      },
+      queryValues(sql, params) {
+        const statement: NodeSqliteStatement = db.prepare(sql);
+        statement.setReturnArrays(true);
+        return statement.all(...params) as unknown as unknown[][];
       },
       close() {
         db.close();
@@ -93,6 +103,7 @@ export const d1 = (binding: D1Binding): SqliteDriver => {
   let warned = false;
 
   return {
+    d1: binding,
     // a "connection" is only a handle on the binding; Workers also warn when one
     // request's pending acquire is resolved by another request releasing
     pool: { min: 0, max: 100 },
