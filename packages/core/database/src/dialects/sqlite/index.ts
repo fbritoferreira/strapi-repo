@@ -28,6 +28,11 @@ export default class SqliteDialect extends Dialect {
   configure(conn?: Knex.Sqlite3ConnectionConfig) {
     const connection =
       conn || (this.db.config.connection.connection as Knex.Sqlite3ConnectionConfig);
+    // platform drivers such as D1 have no file
+    if (typeof connection !== 'string' && !connection?.filename) {
+      return;
+    }
+
     if (typeof connection !== 'string') {
       connection.filename = path.resolve(connection.filename);
     }

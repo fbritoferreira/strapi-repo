@@ -62,6 +62,57 @@ export const nodeSqlite: SqliteDriver = {
   },
 };
 
+/** The subset of Cloudflare's `D1Database` binding the driver uses. */
+export interface D1Binding {
+  prepare(sql: string): {
+    bind(...params: unknown[]): {
+      all(): Promise<{
+        results: Record<string, unknown>[];
+        meta: { last_row_id?: number; changes?: number };
+      }>;
+    };
+  };
+}
+
+const TRANSACTION_SQL = /^\s*(begin|commit|rollback|savepoint|release)\b/i;
+
+/**
+ * Cloudflare D1 through its Worker binding.
+ *
+ * D1 runs every statement in auto-commit and rejects BEGIN/COMMIT/ROLLBACK, so
+ * transaction statements are dropped. Writes inside `strapi.db.transaction()`
+ * are applied one by one and a failure part-way through is not rolled back.
+ */
+export const d1 = (binding: D1Binding): SqliteDriver => {
+  let warned = false;
+
+  return {
+    open: () => ({
+      async query(sql, params) {
+        if (TRANSACTION_SQL.test(sql)) {
+          if (!warned) {
+            warned = true;
+            console.warn('[strapi:d1] D1 has no transactions; writes will not roll back on error');
+          }
+          return { reader: false, rows: [] };
+        }
+
+        const { results, meta } = await binding
+          .prepare(sql)
+          .bind(...params)
+          .all();
+
+        return {
+          reader: results.length > 0 || READER_SQL.test(sql),
+          rows: results,
+          lastID: meta.last_row_id,
+          changes: meta.changes,
+        };
+      },
+    }),
+  };
+};
+
 export const sqliteDrivers: Record<string, SqliteDriver> = {
   'node:sqlite': nodeSqlite,
 };

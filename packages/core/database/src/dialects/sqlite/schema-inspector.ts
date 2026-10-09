@@ -3,7 +3,8 @@ import type { Schema, Column, Index, ForeignKey } from '../../schema/types';
 import type { SchemaInspector } from '../dialect';
 
 const SQL_QUERIES = {
-  TABLE_LIST: `select name from sqlite_master where type = 'table' and name NOT LIKE 'sqlite%'`,
+  // _cf_* tables belong to Cloudflare D1 and are not readable
+  TABLE_LIST: `select name from sqlite_master where type = 'table' and name NOT LIKE 'sqlite%' and name NOT LIKE '\\_cf\\_%' escape '\\'`,
   TABLE_INFO: `pragma table_info(??)`,
   INDEX_LIST: 'pragma index_list(??)',
   INDEX_INFO: 'pragma index_info(??)',

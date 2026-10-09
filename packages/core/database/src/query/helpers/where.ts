@@ -333,50 +333,38 @@ const applyOperator = (
       break;
     }
     case '$startsWith': {
-      qb.whereRaw(`?? LIKE ?${likeEscapeClause(qb)}`, [column, `${escapeLike(value)}%`]);
+      whereLike(qb, column, value, 'startsWith');
       break;
     }
     case '$startsWithi': {
-      qb.whereRaw(`${fieldLowerFn(qb)} LIKE LOWER(?)${likeEscapeClause(qb)}`, [
-        column,
-        `${escapeLike(value)}%`,
-      ]);
+      whereLike(qb, column, value, 'startsWith', { lower: true });
       break;
     }
     case '$endsWith': {
-      qb.whereRaw(`?? LIKE ?${likeEscapeClause(qb)}`, [column, `%${escapeLike(value)}`]);
+      whereLike(qb, column, value, 'endsWith');
       break;
     }
     case '$endsWithi': {
-      qb.whereRaw(`${fieldLowerFn(qb)} LIKE LOWER(?)${likeEscapeClause(qb)}`, [
-        column,
-        `%${escapeLike(value)}`,
-      ]);
+      whereLike(qb, column, value, 'endsWith', { lower: true });
       break;
     }
     case '$contains': {
-      qb.whereRaw(`?? LIKE ?${likeEscapeClause(qb)}`, [column, `%${escapeLike(value)}%`]);
+      whereLike(qb, column, value, 'contains');
       break;
     }
 
     case '$notContains': {
-      qb.whereRaw(`?? NOT LIKE ?${likeEscapeClause(qb)}`, [column, `%${escapeLike(value)}%`]);
+      whereLike(qb, column, value, 'contains', { negate: true });
       break;
     }
 
     case '$containsi': {
-      qb.whereRaw(`${fieldLowerFn(qb)} LIKE LOWER(?)${likeEscapeClause(qb)}`, [
-        column,
-        `%${escapeLike(value)}%`,
-      ]);
+      whereLike(qb, column, value, 'contains', { lower: true });
       break;
     }
 
     case '$notContainsi': {
-      qb.whereRaw(`${fieldLowerFn(qb)} NOT LIKE LOWER(?)${likeEscapeClause(qb)}`, [
-        column,
-        `%${escapeLike(value)}%`,
-      ]);
+      whereLike(qb, column, value, 'contains', { lower: true, negate: true });
       break;
     }
 
@@ -486,6 +474,46 @@ const escapeLike = (value: unknown) => escapeQuery(`${value}`, LIKE_SPECIAL_CHAR
 // PostgreSQL and MySQL both default to backslash, matching helpers/search.ts.
 const likeEscapeClause = (qb: Knex.QueryBuilder) =>
   qb.client.dialect === 'sqlite3' ? " ESCAPE '\\'" : '';
+
+// Cloudflare D1 rejects LIKE patterns longer than 50 bytes. On SQLite, longer
+// patterns are matched with substr/instr instead; LOWER() on both sides keeps the
+// ASCII case-insensitivity SQLite's LIKE already has.
+const SQLITE_MAX_LIKE_PATTERN_BYTES = 50;
+
+type LikeMode = 'startsWith' | 'endsWith' | 'contains';
+
+const whereLike = (
+  qb: Knex.QueryBuilder,
+  column: unknown,
+  value: unknown,
+  mode: LikeMode,
+  { lower = false, negate = false } = {}
+) => {
+  const escaped = escapeLike(value);
+  const pattern = { startsWith: `${escaped}%`, endsWith: `%${escaped}`, contains: `%${escaped}%` }[
+    mode
+  ];
+
+  if (
+    qb.client.dialect === 'sqlite3' &&
+    new TextEncoder().encode(pattern).length > SQLITE_MAX_LIKE_PATTERN_BYTES
+  ) {
+    const text = `${value}`;
+    const match = {
+      startsWith: ['substr(LOWER(??), 1, length(?)) = LOWER(?)', [column, text, text]],
+      endsWith: ['substr(LOWER(??), -length(?)) = LOWER(?)', [column, text, text]],
+      contains: ['instr(LOWER(??), LOWER(?)) > 0', [column, text]],
+    } as const;
+    const [sql, bindings] = match[mode];
+    qb.whereRaw(negate ? `NOT (${sql})` : sql, [...bindings] as any[]);
+    return;
+  }
+
+  const field = lower ? fieldLowerFn(qb) : '??';
+  const param = lower ? 'LOWER(?)' : '?';
+  const operator = negate ? 'NOT LIKE' : 'LIKE';
+  qb.whereRaw(`${field} ${operator} ${param}${likeEscapeClause(qb)}`, [column, pattern] as any[]);
+};
 
 /**
  * Prefix unaliased root column keys with `alias` (e.g. `published_at` → `t0.published_at`).

@@ -19,6 +19,13 @@ import { createDrizzle } from './drizzle';
 export { isKnexQuery } from './utils/knex';
 export { isDatabaseClientKind } from './connection';
 export { attributeNaming } from './metadata';
+export { d1, nodeSqlite } from './dialects/sqlite/driver';
+export type {
+  SqliteDriver,
+  SqliteConnection,
+  SqliteResult,
+  D1Binding,
+} from './dialects/sqlite/driver';
 export type { AttributeNaming, Meta } from './metadata';
 export type {
   AttributeRenamesOperation,
