@@ -6,6 +6,8 @@ const sqlite = {
   connection: {
     filename: '.tmp/data.db',
   },
+  // 'node:sqlite' runs without the better-sqlite3 native addon (Deno, Node >= 22.5)
+  driver: process.env.DATABASE_DRIVER,
   useNullAsDefault: true,
 };
 
