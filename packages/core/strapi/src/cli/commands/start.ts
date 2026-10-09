@@ -7,7 +7,11 @@ import type { StrapiCommand } from '../types';
 import { runAction } from '../utils/helpers';
 import { tryQuickOutDir } from '../utils/try-quick-outdir';
 
-const action = async () => {
+interface CmdOptions {
+  admin?: boolean;
+}
+
+const action = async ({ admin = true }: CmdOptions = {}) => {
   const appDir = process.cwd();
   const tsconfigPath = path.join(appDir, 'tsconfig.json');
 
@@ -37,7 +41,8 @@ const action = async () => {
     }
   }
 
-  createStrapi({ appDir, distDir }).start();
+  // --no-admin: serve the API only, with the admin panel built and deployed on its own
+  createStrapi({ appDir, distDir, serveAdminPanel: admin }).start();
 };
 
 /**
@@ -46,6 +51,7 @@ const action = async () => {
 const command: StrapiCommand = () => {
   return createCommand('start')
     .description('Start your Strapi application')
+    .option('--no-admin', 'Do not serve the admin panel (deploy its build separately)')
     .action(runAction('start', action));
 };
 
