@@ -53,13 +53,13 @@ Module._resolveFilename = function tracedResolve(request, parent, ...rest) {
 };
 
 const main = async () => {
-  const { createStrapi, createHonoApp } = require('@strapi/strapi');
+  const { createStrapi } = require('@strapi/strapi');
   const app = createStrapi({ appDir, distDir: appDir });
   await app.load();
   app.server.mount();
 
   // a couple of requests so lazily-read files (favicon, route handlers) are recorded too
-  const fetchApp = createHonoApp(app.server.app).fetch;
+  const fetchApp = app.server.hono.fetch;
   await fetchApp(new Request('http://localhost/api/articles'));
   await fetchApp(new Request('http://localhost/favicon.ico'));
   await app.destroy();

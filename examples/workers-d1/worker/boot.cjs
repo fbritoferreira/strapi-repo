@@ -1,6 +1,6 @@
 // CommonJS on purpose: app files require('@strapi/strapi'), so booting through
 // require keeps a single copy of Strapi (the CJS build) in the bundle.
-const { createStrapi, createHonoApp } = require('@strapi/strapi');
+const { createStrapi } = require('@strapi/strapi');
 const { d1 } = require('@strapi/database');
 
 module.exports = async ({ appDir, env }) => {
@@ -15,7 +15,7 @@ module.exports = async ({ appDir, env }) => {
   await app.load();
   app.server.mount();
 
-  const handle = createHonoApp(app.server.app).fetch;
+  const handle = app.server.hono.fetch;
   const { pool } = app.db.connection.client;
 
   // Strapi finishes some work after responding (onCommit events, webhooks).
