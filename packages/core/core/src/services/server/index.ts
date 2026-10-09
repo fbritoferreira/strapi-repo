@@ -8,6 +8,7 @@ import { createContentAPI } from './content-api';
 import registerAllRoutes from './register-routes';
 import registerApplicationMiddlewares from './register-middlewares';
 import createKoaApp from './koa';
+import { createHonoApp, mountKoaFallback } from './hono';
 import requestCtx from '../request-context';
 
 const healthCheck: Core.MiddlewareHandler = async (ctx) => {
@@ -29,6 +30,8 @@ const createServer = (strapi: Core.Strapi): Modules.Server.Server => {
 
   const routeManager = createRouteManager(strapi);
 
+  const hono = createHonoApp();
+
   const httpServer = createHTTPServer(strapi, app);
 
   const apis = {
@@ -46,6 +49,7 @@ const createServer = (strapi: Core.Strapi): Modules.Server.Server => {
   return {
     app,
     router,
+    hono,
     httpServer,
 
     api(name) {
@@ -77,6 +81,7 @@ const createServer = (strapi: Core.Strapi): Modules.Server.Server => {
 
       Object.values(apis).forEach((api) => api.mount(router));
       app.use(router.routes()).use(router.allowedMethods());
+      mountKoaFallback(hono, app);
 
       return this;
     },

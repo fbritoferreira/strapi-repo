@@ -385,6 +385,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@asteasolutions/zod-to-openapi@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "@asteasolutions/zod-to-openapi@npm:9.1.0"
+  dependencies:
+    openapi3-ts: "npm:^4.6.0"
+  peerDependencies:
+    zod: ^4.0.0
+  checksum: 10c0/a6bfbdeab046036ed5e8ba1d460e7c2fb4b780f0c3f6d36afe76cea29cd1b8fc33de00661c57b7835c1cb5235c192ab87ff339b0785f328dacfee6eb1396277f
+  languageName: node
+  linkType: hard
+
 "@aws-crypto/crc32@npm:5.2.0":
   version: 5.2.0
   resolution: "@aws-crypto/crc32@npm:5.2.0"
@@ -4203,6 +4214,30 @@ __metadata:
   peerDependencies:
     hono: ^4
   checksum: 10c0/e77907e3b5db8ab68ed4f297ad84807bfdd698636408de86ab8d36dab4658504ac4c0ed9d9436bc272a0172b9b7a5a4b578532e0b5baf97674c7b420cb5cff4b
+  languageName: node
+  linkType: hard
+
+"@hono/zod-openapi@npm:1.6.3":
+  version: 1.6.3
+  resolution: "@hono/zod-openapi@npm:1.6.3"
+  dependencies:
+    "@asteasolutions/zod-to-openapi": "npm:^9.1.0"
+    "@hono/zod-validator": "npm:^0.9.1"
+    openapi3-ts: "npm:^4.5.0"
+  peerDependencies:
+    hono: ">=4.10.0"
+    zod: ^4.0.0
+  checksum: 10c0/4701ff968f08b12e5756d03485155ef957e06b8c44789d0d973440a35538f10d3522e6918fcc44e5ca47c55b4632c61c170d0acd8564aa8c6ca9bab412058d2d
+  languageName: node
+  linkType: hard
+
+"@hono/zod-validator@npm:^0.9.1":
+  version: 0.9.1
+  resolution: "@hono/zod-validator@npm:0.9.1"
+  peerDependencies:
+    hono: ">=4.11.2"
+    zod: ^3.25.0 || ^4.0.0
+  checksum: 10c0/34fb97baf400046a250d6cf746449d5e1d9cbcda0f31d3be08a5d0f121875cf3f951a73a809aa7875b3bbe82d4a945a730cb49edb44cb33fd990d49a513e8589
   languageName: node
   linkType: hard
 
@@ -9883,6 +9918,7 @@ __metadata:
   dependencies:
     "@casl/ability": "npm:6.7.5"
     "@hono/node-server": "npm:1.19.17"
+    "@hono/zod-openapi": "npm:1.6.3"
     "@koa/cors": "npm:5.0.0"
     "@koa/router": "npm:12.0.2"
     "@modelcontextprotocol/client": "npm:2.3.1"
@@ -10768,6 +10804,7 @@ __metadata:
   resolution: "@strapi/types@workspace:packages/core/types"
   dependencies:
     "@casl/ability": "npm:6.7.5"
+    "@hono/zod-openapi": "npm:1.6.3"
     "@koa/cors": "npm:5.0.0"
     "@koa/router": "npm:12.0.2"
     "@strapi/database": "npm:5.57.0"
@@ -25166,6 +25203,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"openapi3-ts@npm:^4.5.0, openapi3-ts@npm:^4.6.0":
+  version: 4.6.1
+  resolution: "openapi3-ts@npm:4.6.1"
+  dependencies:
+    yaml: "npm:^2.9.0"
+  checksum: 10c0/6593453cb4cc39de4216118946a473244cfc2a1cbc766df27e15be1922e202016fed6e2fc568e67a82535f596f62cbbe5c66e8aafd6c4891849d677140096932
+  languageName: node
+  linkType: hard
+
 "opener@npm:^1.5.2":
   version: 1.5.2
   resolution: "opener@npm:1.5.2"
@@ -31633,6 +31679,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "workers-d1@workspace:examples/workers-d1"
   dependencies:
+    "@hono/zod-openapi": "npm:1.6.3"
     "@strapi/strapi": "workspace:*"
     react: "npm:18.3.1"
     react-dom: "npm:18.3.1"
@@ -31905,6 +31952,15 @@ __metadata:
   bin:
     yaml: bin.mjs
   checksum: 10c0/f340718df45e97a9551b9bf9dac61c80050bc464513b710debfb5067c380c8472e3b67809cffacb4ab5ffb5e66ef9310816c88b05f371cec60abfedd8c88e0a2
+  languageName: node
+  linkType: hard
+
+"yaml@npm:^2.9.0":
+  version: 2.9.1
+  resolution: "yaml@npm:2.9.1"
+  bin:
+    yaml: bin.mjs
+  checksum: 10c0/9d06676ef02b89559a8b10a71882bd2cdae81e8393dc8dbc871615c3259475d9609ad973d19cb3c9e71e72d6206e3d1e7aa241c7e55f3d16fd2e77db305827d6
   languageName: node
   linkType: hard
 
