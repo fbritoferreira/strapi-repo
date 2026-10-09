@@ -25,6 +25,12 @@ export interface SqliteConnection {
 
 export interface SqliteDriver {
   open(settings: { filename?: string }): Promise<SqliteConnection> | SqliteConnection;
+  /**
+   * Pool size. Defaults to Knex's single sqlite connection. Drivers without
+   * connection state (D1) raise it so concurrent requests never queue on one
+   * connection.
+   */
+  pool?: { min: number; max: number };
 }
 
 type NodeSqliteStatement = {
@@ -87,6 +93,9 @@ export const d1 = (binding: D1Binding): SqliteDriver => {
   let warned = false;
 
   return {
+    // a "connection" is only a handle on the binding; Workers also warn when one
+    // request's pending acquire is resolved by another request releasing
+    pool: { min: 0, max: 100 },
     open: () => ({
       async query(sql, params) {
         if (TRANSACTION_SQL.test(sql)) {
@@ -128,6 +137,10 @@ export const createSqliteDriverClient = (
   class StrapiSqliteClient extends (BaseClient as any) {
     _driver() {
       return driver;
+    }
+
+    poolDefaults() {
+      return { ...super.poolDefaults(), ...driver.pool };
     }
 
     async acquireRawConnection() {

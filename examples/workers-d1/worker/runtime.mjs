@@ -120,11 +120,25 @@ const createFs = (files) => {
 
 export const installRuntime = ({ appDir, files, resolved, modules }) => {
   const fs = createFs(files);
+
+  // workerd's util.debuglog logs every section; Node only logs those in NODE_DEBUG
+  const realUtil = process.getBuiltinModule('node:util');
+  const debugSections = (process.env.NODE_DEBUG ?? '').toLowerCase().split(',');
+  const util = {
+    ...realUtil,
+    debuglog: (section, ...rest) =>
+      debugSections.includes(section.toLowerCase())
+        ? realUtil.debuglog(section, ...rest)
+        : Object.assign(() => {}, { enabled: false }),
+  };
+
   const builtins = {
     fs,
     'node:fs': fs,
     'fs/promises': fs.promises,
     'node:fs/promises': fs.promises,
+    util,
+    'node:util': util,
   };
 
   const loadBuiltin = (name) => {
