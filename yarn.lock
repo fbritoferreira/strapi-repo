@@ -31634,6 +31634,10 @@ __metadata:
   resolution: "workers-d1@workspace:examples/workers-d1"
   dependencies:
     "@strapi/strapi": "workspace:*"
+    react: "npm:18.3.1"
+    react-dom: "npm:18.3.1"
+    react-router-dom: "npm:6.30.6"
+    styled-components: "npm:6.4.1"
     wrangler: "npm:4.139.0"
   languageName: unknown
   linkType: soft

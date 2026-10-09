@@ -6,10 +6,17 @@
   "scripts": {
     "build:worker": "node scripts/build-worker.mjs",
     "dev": "yarn build:worker && wrangler dev",
-    "deploy": "yarn build:worker && wrangler deploy"
+    "deploy": "yarn build:worker && wrangler deploy",
+    "build:admin": "strapi build && node scripts/stage-admin.mjs",
+    "dev:admin": "wrangler dev -c wrangler.admin.jsonc --port 8788",
+    "strapi": "strapi"
   },
   "dependencies": {
-    "@strapi/strapi": "workspace:*"
+    "@strapi/strapi": "workspace:*",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.30.6",
+    "styled-components": "6.4.1"
   },
   "devDependencies": {
     "wrangler": "4.139.0"
